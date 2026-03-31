@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA FINAL + GALE</title>
+<title>Aviator IA TESTE LIVRE</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -22,7 +22,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🚀 AVIATOR IA + GALE INTELIGENTE</h1>
+<h1>🚀 AVIATOR IA TESTE LIVRE</h1>
 
 <div id="display">1.00x</div>
 
@@ -66,8 +66,7 @@ reset();
 
 let chart = new Chart(document.getElementById('grafico'), {
   type: 'bar',
-  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-  options: { scales: { y: { beginAtZero: true } } }
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] }
 });
 
 function gerar(){
@@ -84,7 +83,6 @@ function cor(x){
   return "pink";
 }
 
-// 📊 Probabilidade real
 function probReal(){
   if(historico.length < 30) return 50;
   let ult = historico.slice(-30);
@@ -92,17 +90,16 @@ function probReal(){
   return (ganhos / 30) * 100;
 }
 
-// ⚔️ Estratégias
 function estrategiaReversao(){
   let ult = historico.slice(-10);
   let baixos = ult.filter(x=>x<2).length;
-  return baixos >= 5 ? 70 : 45;
+  return baixos >= 4 ? 70 : 45;
 }
 
 function estrategiaContinuidade(){
   let ult = historico.slice(-5);
   let media = ult.reduce((a,b)=>a+b,0)/5;
-  return media >= 1.8 ? 65 : 50;
+  return media >= 1.7 ? 65 : 50;
 }
 
 function estrategiaScalp(){
@@ -135,15 +132,14 @@ function rodada(logar=true){
   let entrar = false;
   let status = "AGUARDANDO";
 
-  if(perdasSeguidas >= 2){
-    entrar = false;
-    status = "BLOQUEADO";
-  }
-  else if(probFinal >= 75){
+  let ult = historico.slice(-5);
+  let padraoOK = ult.filter(x => x < 2).length >= 1;
+
+  if(probFinal >= 72){
     entrar = true;
     status = "🔥 SUPER ENTRADA";
   }
-  else if(probFinal >= 62){
+  else if(probFinal >= 58 && padraoOK){
     entrar = true;
     status = "ENTRADA";
   }
@@ -167,7 +163,6 @@ function rodada(logar=true){
       losses++;
       perdasSeguidas++;
 
-      // 🔥 GALE INTELIGENTE
       if(gale == 0 && probFinal >= 70){
         gale = 1;
         if(logar) addLog("⚠️ GALE ATIVADO");
@@ -219,7 +214,7 @@ function addLog(txt){
 function loop(){
   if(!rodando) return;
   rodada(true);
-  setTimeout(loop, 400);
+  setTimeout(loop, 350);
 }
 
 function start(){ rodando=true; loop(); }
@@ -260,4 +255,4 @@ async function backtest(){
 </script>
 
 </body>
-</html>
+  </html>
