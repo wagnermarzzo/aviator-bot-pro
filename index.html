@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA TESTE LIVRE</title>
+<title>Aviator IA FINAL EQUILIBRADA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -22,7 +22,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🚀 AVIATOR IA TESTE LIVRE</h1>
+<h1>🎯 AVIATOR IA EQUILIBRADA</h1>
 
 <div id="display">1.00x</div>
 
@@ -135,7 +135,14 @@ function rodada(logar=true){
   let ult = historico.slice(-5);
   let padraoOK = ult.filter(x => x < 2).length >= 1;
 
-  if(probFinal >= 72){
+  let bloqueado = perdasSeguidas >= 3;
+
+  if(bloqueado){
+    entrar = false;
+    gale = 0;
+    status = "⛔ BLOQUEADO (3 LOSSES)";
+  }
+  else if(probFinal >= 72){
     entrar = true;
     status = "🔥 SUPER ENTRADA";
   }
@@ -255,4 +262,4 @@ async function backtest(){
 </script>
 
 </body>
-  </html>
+</html>
