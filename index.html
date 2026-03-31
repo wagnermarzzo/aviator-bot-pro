@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>AVIATOR SNIPER REAL</title>
+<title>AVIATOR SNIPER REAL FINAL</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -18,7 +18,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🎯 MODO SNIPER REAL</h1>
+<h1>🎯 MODO SNIPER REAL FINAL</h1>
 
 <div id="display">1.00x</div>
 
@@ -32,7 +32,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <button class="start" onclick="start()">START</button>
 <button class="stop" onclick="stop()">STOP</button>
-<button onclick="backtest()">BACKTEST</button>
+<button onclick="backtest()">BACKTEST 5000</button>
 
 <div class="box">
 <canvas id="grafico"></canvas>
@@ -84,7 +84,7 @@ function probReal(){
   return (ganhos / 30) * 100;
 }
 
-function rodada(){
+function rodada(logar=true){
   let resultado = gerar();
   historico.push(resultado);
   if(historico.length > 60) historico.shift();
@@ -102,11 +102,11 @@ function rodada(){
 
   if(cooldown > 0){
     cooldown--;
-    status = "⏳ COOLDOWN";
+    status = "⏳ COOLDOWN ("+cooldown+")";
   }
   else if(espera > 0){
     espera--;
-    status = "⏸️ ESPERA";
+    status = "⏸️ ESPERA ("+espera+")";
   }
   else if(prob >= 75 && padraoExtremo){
     entrar = true;
@@ -149,35 +149,64 @@ function rodada(){
   document.getElementById("entradas").innerText = entradas;
   document.getElementById("status").innerText = status;
 
-  document.getElementById("display").innerText = resultado.toFixed(2)+"x";
+  if(logar){
+    document.getElementById("display").innerText = resultado.toFixed(2)+"x";
+    document.getElementById("display").style.color = cor(resultado);
 
-  chart.data.labels.push("");
-  chart.data.datasets[0].data.push(resultado);
-  chart.data.datasets[0].backgroundColor.push(cor(resultado));
+    chart.data.labels.push("");
+    chart.data.datasets[0].data.push(resultado);
+    chart.data.datasets[0].backgroundColor.push(cor(resultado));
 
-  if(chart.data.labels.length > 40){
-    chart.data.labels.shift();
-    chart.data.datasets[0].data.shift();
-    chart.data.datasets[0].backgroundColor.shift();
+    if(chart.data.labels.length > 40){
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+      chart.data.datasets[0].backgroundColor.shift();
+    }
+
+    chart.update();
   }
-
-  chart.update();
 }
 
 function loop(){
   if(!rodando) return;
-  rodada();
+  rodada(true);
   setTimeout(loop, 400);
 }
 
 function start(){ rodando=true; loop(); }
 function stop(){ rodando=false; }
 
-function backtest(){
+async function backtest(){
   reset();
-  for(let i=0;i<5000;i++) rodada();
 
-  alert("Saldo: "+saldo.toFixed(2));
+  let totalRodadas = 5000;
+  let bloco = 200;
+
+  for(let i = 0; i < totalRodadas; i += bloco){
+
+    for(let j = 0; j < bloco; j++){
+      rodada(false);
+    }
+
+    document.getElementById("status").innerText =
+      "Backtest: " + Math.min(i+bloco, totalRodadas) + "/" + totalRodadas;
+
+    await new Promise(r => setTimeout(r, 0));
+  }
+
+  let total = wins + losses;
+  let winrate = total ? (wins/total*100).toFixed(1) : 0;
+  let drawdown = saldoMax - saldo;
+
+  alert(
+    "RESULTADO FINAL\n\n"+
+    "Saldo: "+saldo.toFixed(2)+"\n"+
+    "Winrate: "+winrate+"%\n"+
+    "Entradas: "+entradas+"\n"+
+    "Drawdown: "+drawdown.toFixed(2)
+  );
+
+  document.getElementById("status").innerText = "FINALIZADO";
 }
 </script>
 
