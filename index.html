@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA Auto</title>
+<title>Aviator Ultra PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -12,31 +12,23 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 .start { background:#22c55e; }
 .stop { background:red; }
 .box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
-#velas span { margin:2px; padding:3px; display:inline-block; }
 </style>
 </head>
 
 <body>
 
-<h1>🤖 Aviator IA Auto Adaptativa</h1>
+<h1>🚀 Aviator Ultra IA</h1>
 
 <div class="box">
 💰 Saldo: <span id="saldo">100</span><br>
 📊 Último: <span id="ultimo">-</span><br>
-🧠 Score: <span id="score">-</span><br>
-🎯 Taxa de Acerto: <span id="winrate">0%</span><br>
-📉 Drawdown: <span id="drawdown">0</span><br>
+🎯 Winrate: <span id="winrate">0%</span><br>
 ⚙️ Limite IA: <span id="limite">6</span>
 </div>
 
 <button class="start" onclick="start()">START</button>
 <button class="stop" onclick="stop()">STOP</button>
-<button onclick="backtest()">BACKTEST 2000</button>
-
-<div class="box">
-<h3>Velas</h3>
-<div id="velas"></div>
-</div>
+<button onclick="backtest()">BACKTEST 3000</button>
 
 <div class="box">
 <canvas id="grafico"></canvas>
@@ -44,26 +36,36 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <script>
 let saldo = 100;
-let saldoMax = 100;
 let aposta = 5;
 let meta = 1.7;
 
 let historico = [];
-let velas = [];
-
-let rodando = false;
+let cores = [];
 
 let wins = 0;
 let losses = 0;
-
 let perdasSeguidas = 0;
 
-// IA dinâmica
 let limite = 6;
+let rodando = false;
 
 let chart = new Chart(document.getElementById('grafico'), {
-  type: 'line',
-  data: { labels: [], datasets: [{ label: 'Saldo', data: [] }] }
+  type: 'bar',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Multiplicador',
+      data: [],
+      backgroundColor: []
+    }]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
 });
 
 function gerar() {
@@ -74,71 +76,61 @@ function gerar() {
   return 10 + Math.random()*40;
 }
 
-function scoreCalc() {
-  if (historico.length < 10) return 0;
+function corMultiplicador(x){
+  if (x < 2) return "blue";
+  if (x < 10) return "green";
+  return "pink";
+}
 
-  let ult = historico.slice(-10);
+function scoreCalc() {
+  if (historico.length < 15) return 0;
+
+  let ult = historico.slice(-15);
 
   let baixos = ult.filter(x=>x<2).length;
-  let media = ult.reduce((a,b)=>a+b,0)/10;
+  let media = ult.reduce((a,b)=>a+b,0)/15;
 
   let score = 0;
 
-  score += baixos * 1.2;
+  score += baixos * 1.5;
   score += (2 - media);
-  score -= perdasSeguidas * 2;
+  score -= perdasSeguidas * 3;
 
   return score;
 }
 
-// IA aprende aqui
 function ajustarIA() {
   let total = wins + losses;
-  if (total < 20) return;
+  if (total < 30) return;
 
   let winrate = wins / total;
 
-  // Se estiver perdendo → fica mais conservador
-  if (winrate < 0.45) limite += 0.3;
+  if (winrate < 0.5) limite += 0.5;
+  if (winrate > 0.7) limite -= 0.4;
 
-  // Se estiver ganhando → fica mais agressivo
-  if (winrate > 0.60) limite -= 0.3;
-
-  // trava limites
-  if (limite < 4) limite = 4;
-  if (limite > 10) limite = 10;
+  if (limite < 5) limite = 5;
+  if (limite > 12) limite = 12;
 }
 
 function rodada() {
   let resultado = gerar();
   historico.push(resultado);
-  if (historico.length > 30) historico.shift();
+  if (historico.length > 50) historico.shift();
 
   let score = scoreCalc();
   let entrar = score >= limite;
-
-  let status = "none";
 
   if (entrar) {
     if (resultado >= meta) {
       saldo += aposta * (meta - 1);
       wins++;
       perdasSeguidas = 0;
-      status = "win";
     } else {
       saldo -= aposta;
       losses++;
       perdasSeguidas++;
-      status = "loss";
     }
   }
-
-  velas.push(status);
-  if (velas.length > 60) velas.shift();
-
-  // Drawdown
-  if (saldo > saldoMax) saldoMax = saldo;
-  let drawdown = saldoMax - saldo;
 
   ajustarIA();
 
@@ -147,49 +139,48 @@ function rodada() {
 
   document.getElementById("saldo").innerText = saldo.toFixed(2);
   document.getElementById("ultimo").innerText = resultado.toFixed(2)+"x";
-  document.getElementById("score").innerText = score.toFixed(2);
   document.getElementById("winrate").innerText = winrate+"%";
-  document.getElementById("drawdown").innerText = drawdown.toFixed(2);
   document.getElementById("limite").innerText = limite.toFixed(2);
 
-  document.getElementById("velas").innerHTML =
-    velas.map(v=>{
-      if (v=="win") return '<span style="background:blue">●</span>';
-      if (v=="loss") return '<span style="background:red">●</span>';
-      return '<span style="background:gray">●</span>';
-    }).join("");
-
+  // gráfico bonito
   chart.data.labels.push("");
-  chart.data.datasets[0].data.push(saldo);
+  chart.data.datasets[0].data.push(resultado.toFixed(2));
+  chart.data.datasets[0].backgroundColor.push(corMultiplicador(resultado));
+
+  if (chart.data.labels.length > 40){
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+    chart.data.datasets[0].backgroundColor.shift();
+  }
+
   chart.update();
 }
 
-function loop() {
-  if (!rodando) return;
+function loop(){
+  if(!rodando) return;
   rodada();
-  setTimeout(loop, 500);
+  setTimeout(loop, 400);
 }
 
 function start(){ rodando = true; loop(); }
 function stop(){ rodando = false; }
 
-function backtest() {
+function backtest(){
   saldo = 100;
-  saldoMax = 100;
   wins = 0;
   losses = 0;
   limite = 6;
   historico = [];
-  velas = [];
 
   chart.data.labels = [];
   chart.data.datasets[0].data = [];
+  chart.data.datasets[0].backgroundColor = [];
 
-  for (let i=0;i<2000;i++){
+  for(let i=0;i<3000;i++){
     rodada();
   }
 
-  alert("Backtest finalizado\nSaldo: "+saldo.toFixed(2));
+  alert("Saldo final: "+saldo.toFixed(2));
 }
 </script>
 
