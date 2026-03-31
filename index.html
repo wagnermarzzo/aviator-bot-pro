@@ -2,13 +2,12 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA FINAL EQUILIBRADA</title>
+<title>Aviator IA FINAL OTIMIZADA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body { background:#0b1220; color:#fff; font-family:Arial; text-align:center; }
-
 #display { font-size:60px; margin:20px; font-weight:bold; }
 
 button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
@@ -22,7 +21,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🎯 AVIATOR IA EQUILIBRADA</h1>
+<h1>🎯 AVIATOR IA FINAL OTIMIZADA</h1>
 
 <div id="display">1.00x</div>
 
@@ -93,13 +92,13 @@ function probReal(){
 function estrategiaReversao(){
   let ult = historico.slice(-10);
   let baixos = ult.filter(x=>x<2).length;
-  return baixos >= 4 ? 70 : 45;
+  return baixos >= 5 ? 70 : 45;
 }
 
 function estrategiaContinuidade(){
   let ult = historico.slice(-5);
   let media = ult.reduce((a,b)=>a+b,0)/5;
-  return media >= 1.7 ? 65 : 50;
+  return media >= 1.8 ? 65 : 50;
 }
 
 function estrategiaScalp(){
@@ -135,18 +134,18 @@ function rodada(logar=true){
   let ult = historico.slice(-5);
   let padraoOK = ult.filter(x => x < 2).length >= 1;
 
-  let bloqueado = perdasSeguidas >= 3;
+  let bloqueado = perdasSeguidas >= 2;
 
   if(bloqueado){
     entrar = false;
     gale = 0;
-    status = "⛔ BLOQUEADO (3 LOSSES)";
+    status = "⛔ BLOQUEADO (2 LOSSES)";
   }
-  else if(probFinal >= 72){
+  else if(probFinal >= 75){
     entrar = true;
     status = "🔥 SUPER ENTRADA";
   }
-  else if(probFinal >= 58 && padraoOK){
+  else if(probFinal >= 62 && padraoOK){
     entrar = true;
     status = "ENTRADA";
   }
@@ -170,9 +169,10 @@ function rodada(logar=true){
       losses++;
       perdasSeguidas++;
 
-      if(gale == 0 && probFinal >= 70){
+      // GALE SOMENTE EM SUPER ENTRADA
+      if(gale == 0 && probFinal >= 75){
         gale = 1;
-        if(logar) addLog("⚠️ GALE ATIVADO");
+        if(logar) addLog("⚠️ GALE ATIVADO (FORTE)");
       } else {
         gale = 0;
         if(logar) addLog("🔴 LOSS FINAL");
