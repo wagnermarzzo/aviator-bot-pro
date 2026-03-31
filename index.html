@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Aviator Bot PRO</title>
+
+<style>
+body {
+  background: #0f172a;
+  color: #fff;
+  font-family: Arial;
+  text-align: center;
+}
+
+h1 {
+  color: #38bdf8;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 5px;
+  background: #22c55e;
+  color: white;
+  cursor: pointer;
+}
+
+.stop {
+  background: red;
+}
+
+.box {
+  background: #1e293b;
+  padding: 15px;
+  margin: 10px;
+  border-radius: 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🚀 Aviator Bot PRO</h1>
+
+<div class="box">
+  <p>💰 Saldo: <span id="saldo">100</span></p>
+  <p>📊 Último: <span id="ultimo">-</span></p>
+  <p>🧠 Decisão: <span id="decisao">-</span></p>
+</div>
+
+<button onclick="start()">START</button>
+<button class="stop" onclick="stop()">STOP</button>
+
+<div class="box">
+  <h3>Histórico</h3>
+  <div id="historico"></div>
+</div>
+
+<script>
+let saldo = 100;
+let aposta = 5;
+let meta = 1.8;
+let rodando = false;
+let historico = [];
+
+function gerarMultiplicador() {
+  let r = Math.random();
+
+  if (r < 0.50) return (1 + Math.random() * 0.5).toFixed(2);
+  if (r < 0.80) return (1.5 + Math.random() * 1.5).toFixed(2);
+  if (r < 0.95) return (3 + Math.random() * 7).toFixed(2);
+
+  return (10 + Math.random() * 40).toFixed(2);
+}
+
+function analisar() {
+  if (historico.length < 10) return "AGUARDAR";
+
+  let ultimos = historico.slice(-10);
+
+  let baixos = ultimos.filter(x => x < 2).length;
+  let altos = ultimos.filter(x => x >= 5).length;
+  let media = ultimos.reduce((a,b)=>a+b,0) / ultimos.length;
+
+  // Lógica melhorada
+  if (baixos >= 7 && altos == 0 && media < 2) {
+    return "ENTRAR";
+  }
+
+  if (baixos >= 8) {
+    return "EVITAR";
+  }
+
+  return "NEUTRO";
+}
+
+function atualizarTela(resultado, decisao) {
+  document.getElementById("saldo").innerText = saldo.toFixed(2);
+  document.getElementById("ultimo").innerText = resultado + "x";
+  document.getElementById("decisao").innerText = decisao;
+
+  let hist = document.getElementById("historico");
+  hist.innerHTML = historico.map(x => `<span>${x}x </span>`).join("");
+}
+
+function loop() {
+  if (!rodando) return;
+
+  let resultado = parseFloat(gerarMultiplicador());
+  historico.push(resultado);
+  if (historico.length > 30) historico.shift();
+
+  let decisao = analisar();
+
+  if (decisao === "ENTRAR") {
+    if (resultado >= meta) {
+      saldo += aposta * (meta - 1);
+    } else {
+      saldo -= aposta;
+    }
+  }
+
+  atualizarTela(resultado, decisao);
+
+  setTimeout(loop, 1000);
+}
+
+function start() {
+  rodando = true;
+  loop();
+}
+
+function stop() {
+  rodando = false;
+}
+</script>
+
+</body>
+  </html>
