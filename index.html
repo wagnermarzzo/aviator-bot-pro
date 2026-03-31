@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA FINAL OTIMIZADA</title>
+<title>Aviator IA FINAL COOLDOWN</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -21,7 +21,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🎯 AVIATOR IA FINAL OTIMIZADA</h1>
+<h1>🧠 AVIATOR IA FINAL COM COOLDOWN</h1>
 
 <div id="display">1.00x</div>
 
@@ -49,6 +49,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 let saldo, saldoMax, wins, losses, perdasSeguidas, entradas;
 let historico, rodando;
 let gale = 0;
+let cooldown = 0;
 
 function reset(){
   saldo = 100;
@@ -59,6 +60,7 @@ function reset(){
   entradas = 0;
   historico = [];
   gale = 0;
+  cooldown = 0;
 }
 
 reset();
@@ -134,12 +136,11 @@ function rodada(logar=true){
   let ult = historico.slice(-5);
   let padraoOK = ult.filter(x => x < 2).length >= 1;
 
-  let bloqueado = perdasSeguidas >= 2;
-
-  if(bloqueado){
+  // 🧠 COOLDOWN
+  if(cooldown > 0){
+    cooldown--;
     entrar = false;
-    gale = 0;
-    status = "⛔ BLOQUEADO (2 LOSSES)";
+    status = "⏳ AGUARDANDO ("+cooldown+")";
   }
   else if(probFinal >= 75){
     entrar = true;
@@ -169,13 +170,21 @@ function rodada(logar=true){
       losses++;
       perdasSeguidas++;
 
-      // GALE SOMENTE EM SUPER ENTRADA
+      // 🔥 GALE SÓ EM ENTRADA FORTE
       if(gale == 0 && probFinal >= 75){
         gale = 1;
-        if(logar) addLog("⚠️ GALE ATIVADO (FORTE)");
+        if(logar) addLog("⚠️ GALE ATIVADO");
       } else {
         gale = 0;
         if(logar) addLog("🔴 LOSS FINAL");
+      }
+
+      // 🧠 ATIVA COOLDOWN
+      if(perdasSeguidas >= 2){
+        cooldown = 5;
+        perdasSeguidas = 0;
+        gale = 0;
+        if(logar) addLog("⛔ COOLDOWN ATIVADO");
       }
     }
   }
@@ -262,4 +271,4 @@ async function backtest(){
 </script>
 
 </body>
-</html>
+  </html>
