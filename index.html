@@ -2,34 +2,28 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA ALINHADA</title>
+<title>Aviator IA FINAL</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body { background:#0b1220; color:#fff; font-family:Arial; text-align:center; }
 
-#display {
-  font-size:60px;
-  margin:20px;
-  font-weight:bold;
-}
+#display { font-size:60px; margin:20px; font-weight:bold; }
 
 button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
 .start { background:#22c55e; }
 .stop { background:red; }
 
 .box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
-
 .log { max-height:150px; overflow:auto; text-align:left; }
-
 .super { color: gold; font-weight:bold; }
 </style>
 </head>
 
 <body>
 
-<h1>🎯 AVIATOR IA ALINHADA</h1>
+<h1>🚀 AVIATOR IA FINAL</h1>
 
 <div id="display">1.00x</div>
 
@@ -39,12 +33,12 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 📉 Drawdown: <span id="drawdown">0</span><br>
 🔢 Entradas: <span id="entradas">0</span><br>
 🧠 Probabilidade: <span id="prob">-</span><br>
-⚙️ Status: <span id="status">AGUARDANDO</span>
+📊 Estratégia: <span id="estrategia">-</span>
 </div>
 
 <button class="start" onclick="start()">START</button>
 <button class="stop" onclick="stop()">STOP</button>
-<button onclick="backtest()">BACKTEST 5000</button>
+<button onclick="backtest()">BACKTEST 8000</button>
 
 <div class="box">
 <canvas id="grafico"></canvas>
@@ -61,7 +55,7 @@ function reset(){
   saldoMax = 100;
   wins = 0;
   losses = 0;
-  perdasSeguidas = 2;
+  perdasSeguidas = 0;
   entradas = 0;
   historico = [];
 }
@@ -70,12 +64,7 @@ reset();
 
 let chart = new Chart(document.getElementById('grafico'), {
   type: 'bar',
-  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-  options: {
-    scales: {
-      y: { beginAtZero: true }
-    }
-  }
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] }
 });
 
 function gerar(){
@@ -92,20 +81,46 @@ function cor(x){
   return "pink";
 }
 
-function analisar(){
-  if(historico.length < 20) return {prob:0};
+// 📊 Probabilidade REAL baseada no histórico
+function probReal(){
+  if(historico.length < 30) return 50;
 
-  let ult = historico.slice(-20);
+  let ult = historico.slice(-30);
 
+  let ganhos = ult.filter(x=>x >= 1.7).length;
+  return (ganhos / 30) * 100;
+}
+
+// ⚔️ Estratégias
+function estrategiaReversao(){
+  let ult = historico.slice(-10);
   let baixos = ult.filter(x=>x<2).length;
-  let altos = ult.filter(x=>x>=3).length;
-  let media = ult.reduce((a,b)=>a+b,0)/20;
+  return baixos >= 7 ? 70 : 40;
+}
 
-  let score = baixos*2 + (2-media)*2 - altos*1.5 - perdasSeguidas*4;
+function estrategiaContinuidade(){
+  let ult = historico.slice(-5);
+  let media = ult.reduce((a,b)=>a+b,0)/5;
+  return media >= 2 ? 65 : 45;
+}
 
-  let prob = Math.min(95, Math.max(50, 50 + score*5));
+function estrategiaScalp(){
+  let ult = historico.slice(-15);
+  let proximos = ult.filter(x=>x>=1.5 && x<=2).length;
+  return (proximos/15)*100;
+}
 
-  return {prob};
+// 🧠 Escolhe melhor estratégia
+function escolherEstrategia(){
+  let r = estrategiaReversao();
+  let c = estrategiaContinuidade();
+  let s = estrategiaScalp();
+
+  let max = Math.max(r,c,s);
+
+  if(max == r) return {nome:"Reversão", prob:r};
+  if(max == c) return {nome:"Continuidade", prob:c};
+  return {nome:"Scalp", prob:s};
 }
 
 function rodada(logar=true){
@@ -113,23 +128,12 @@ function rodada(logar=true){
   historico.push(resultado);
   if(historico.length > 60) historico.shift();
 
-  let {prob} = analisar();
+  let probBase = probReal();
+  let estrategia = escolherEstrategia();
 
-  let entrar = false;
-  let status = "AGUARDANDO";
+  let probFinal = (probBase + estrategia.prob) / 2;
 
-  let ult = historico.slice(-5);
-  let padraoOK = ult.filter(x=>x<2).length >= 2;
-
-  // DECISÃO ALINHADA COM PROBABILIDADE
-  if (prob >= 85 && perdasSeguidas < 2) {
-    entrar = true;
-    status = "🔥 SUPER ENTRADA";
-  }
-  else if (prob >= 70 && padraoOK && perdasSeguidas < 2) {
-    entrar = true;
-    status = "ENTRADA";
-  }
+  let entrar = probFinal >= 70 && perdasSeguidas < 2;
 
   if(entrar){
     entradas++;
@@ -137,13 +141,13 @@ function rodada(logar=true){
     if(resultado >= 1.7){
       saldo += 5*(1.7-1);
       wins++;
-      perdasSeguidas = 2;
-      if(logar) addLog("🟢 WIN "+resultado.toFixed(2));
+      perdasSeguidas = 0;
+      if(logar) addLog("🟢 "+estrategia.nome+" WIN "+resultado.toFixed(2));
     } else {
       saldo -= 5;
       losses++;
       perdasSeguidas++;
-      if(logar) addLog("🔴 LOSS "+resultado.toFixed(2));
+      if(logar) addLog("🔴 "+estrategia.nome+" LOSS "+resultado.toFixed(2));
     }
   }
 
@@ -157,10 +161,8 @@ function rodada(logar=true){
   document.getElementById("winrate").innerText = winrate+"%";
   document.getElementById("drawdown").innerText = drawdown.toFixed(2);
   document.getElementById("entradas").innerText = entradas;
-  document.getElementById("prob").innerText = prob.toFixed(1)+"%";
-
-  document.getElementById("status").innerHTML =
-    status.includes("SUPER") ? "<span class='super'>"+status+"</span>" : status;
+  document.getElementById("prob").innerText = probFinal.toFixed(1)+"%";
+  document.getElementById("estrategia").innerText = estrategia.nome;
 
   let disp = document.getElementById("display");
   disp.innerText = resultado.toFixed(2)+"x";
@@ -187,7 +189,7 @@ function addLog(txt){
 function loop(){
   if(!rodando) return;
   rodada();
-  setTimeout(loop, 400);
+  setTimeout(loop, 350);
 }
 
 function start(){ rodando=true; loop(); }
@@ -196,7 +198,7 @@ function stop(){ rodando=false; }
 function backtest(){
   reset();
 
-  for(let i=0;i<5000;i++){
+  for(let i=0;i<8000;i++){
     rodada(false);
   }
 
@@ -205,7 +207,7 @@ function backtest(){
   let drawdown = saldoMax - saldo;
 
   alert(
-    "BACKTEST FINALIZADO\n\n"+
+    "RESULTADO FINAL\n\n"+
     "Saldo: "+saldo.toFixed(2)+"\n"+
     "Winrate: "+winrate+"%\n"+
     "Entradas: "+entradas+"\n"+
@@ -215,4 +217,4 @@ function backtest(){
 </script>
 
 </body>
-</html>
+  </html>
