@@ -2,26 +2,23 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA FINAL COOLDOWN</title>
+<title>AVIATOR SNIPER REAL</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body { background:#0b1220; color:#fff; font-family:Arial; text-align:center; }
 #display { font-size:60px; margin:20px; font-weight:bold; }
-
+.box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
 button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
 .start { background:#22c55e; }
 .stop { background:red; }
-
-.box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
-.log { max-height:150px; overflow:auto; text-align:left; }
 </style>
 </head>
 
 <body>
 
-<h1>🧠 AVIATOR IA FINAL COM COOLDOWN</h1>
+<h1>🎯 MODO SNIPER REAL</h1>
 
 <div id="display">1.00x</div>
 
@@ -30,39 +27,35 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 🎯 Winrate: <span id="winrate">0%</span><br>
 📉 Drawdown: <span id="drawdown">0</span><br>
 🔢 Entradas: <span id="entradas">0</span><br>
-🧠 Probabilidade: <span id="prob">-</span><br>
-📊 Estratégia: <span id="estrategia">-</span><br>
 ⚙️ Status: <span id="status">AGUARDANDO</span>
 </div>
 
 <button class="start" onclick="start()">START</button>
 <button class="stop" onclick="stop()">STOP</button>
-<button onclick="backtest()">BACKTEST 8000</button>
+<button onclick="backtest()">BACKTEST</button>
 
 <div class="box">
 <canvas id="grafico"></canvas>
 </div>
 
-<div class="box log" id="log"></div>
-
 <script>
-let saldo, saldoMax, wins, losses, perdasSeguidas, entradas;
+let saldo, saldoMax, wins, losses, entradas;
 let historico, rodando;
 let gale = 0;
 let cooldown = 0;
+let espera = 0;
 
 function reset(){
   saldo = 100;
   saldoMax = 100;
   wins = 0;
   losses = 0;
-  perdasSeguidas = 0;
   entradas = 0;
   historico = [];
   gale = 0;
   cooldown = 0;
+  espera = 0;
 }
-
 reset();
 
 let chart = new Chart(document.getElementById('grafico'), {
@@ -91,100 +84,55 @@ function probReal(){
   return (ganhos / 30) * 100;
 }
 
-function estrategiaReversao(){
-  let ult = historico.slice(-10);
-  let baixos = ult.filter(x=>x<2).length;
-  return baixos >= 5 ? 70 : 45;
-}
-
-function estrategiaContinuidade(){
-  let ult = historico.slice(-5);
-  let media = ult.reduce((a,b)=>a+b,0)/5;
-  return media >= 1.8 ? 65 : 50;
-}
-
-function estrategiaScalp(){
-  let ult = historico.slice(-15);
-  let mid = ult.filter(x=>x>=1.5 && x<=2).length;
-  return (mid/15)*100;
-}
-
-function escolherEstrategia(){
-  let r = estrategiaReversao();
-  let c = estrategiaContinuidade();
-  let s = estrategiaScalp();
-
-  let max = Math.max(r,c,s);
-
-  if(max == r) return {nome:"Reversão", prob:r};
-  if(max == c) return {nome:"Continuidade", prob:c};
-  return {nome:"Scalp", prob:s};
-}
-
-function rodada(logar=true){
+function rodada(){
   let resultado = gerar();
   historico.push(resultado);
   if(historico.length > 60) historico.shift();
 
-  let probBase = probReal();
-  let estrategia = escolherEstrategia();
-  let probFinal = (probBase + estrategia.prob) / 2;
+  let prob = probReal();
+  let ult5 = historico.slice(-5);
+
+  let baixos = ult5.filter(x=>x < 2).length;
+  let altos = ult5.filter(x=>x >= 2).length;
+
+  let padraoExtremo = (baixos >= 4) || (altos >= 2);
 
   let entrar = false;
   let status = "AGUARDANDO";
 
-  let ult = historico.slice(-5);
-  let padraoOK = ult.filter(x => x < 2).length >= 1;
-
-  // 🧠 COOLDOWN
   if(cooldown > 0){
     cooldown--;
-    entrar = false;
-    status = "⏳ AGUARDANDO ("+cooldown+")";
+    status = "⏳ COOLDOWN";
   }
-  else if(probFinal >= 75){
-    entrar = true;
-    status = "🔥 SUPER ENTRADA";
+  else if(espera > 0){
+    espera--;
+    status = "⏸️ ESPERA";
   }
-  else if(probFinal >= 62 && padraoOK){
+  else if(prob >= 75 && padraoExtremo){
     entrar = true;
-    status = "ENTRADA";
+    status = "🎯 SNIPER";
+    espera = 3;
   }
 
-  let valorBase = 5;
-  let valorAposta = gale == 1 ? valorBase * 2 : valorBase;
+  let valor = gale ? 10 : 5;
 
   if(entrar){
     entradas++;
 
     if(resultado >= 1.7){
-      saldo += valorAposta * (1.7 - 1);
+      saldo += valor*(1.7-1);
       wins++;
-      perdasSeguidas = 0;
       gale = 0;
-
-      if(logar) addLog("🟢 "+estrategia.nome+" WIN "+valorAposta+" ("+resultado.toFixed(2)+"x)");
-    } 
-    else {
-      saldo -= valorAposta;
+      cooldown = 0;
+    } else {
+      saldo -= valor;
       losses++;
-      perdasSeguidas++;
 
-      // 🔥 GALE SÓ EM ENTRADA FORTE
-      if(gale == 0 && probFinal >= 75){
+      if(!gale){
         gale = 1;
-        if(logar) addLog("⚠️ GALE ATIVADO");
       } else {
         gale = 0;
-        if(logar) addLog("🔴 LOSS FINAL");
-      }
-
-      // 🧠 ATIVA COOLDOWN
-      if(perdasSeguidas >= 2){
         cooldown = 5;
-        perdasSeguidas = 0;
-        gale = 0;
-        if(logar) addLog("⛔ COOLDOWN ATIVADO");
       }
     }
   }
@@ -199,13 +147,9 @@ function rodada(logar=true){
   document.getElementById("winrate").innerText = winrate+"%";
   document.getElementById("drawdown").innerText = drawdown.toFixed(2);
   document.getElementById("entradas").innerText = entradas;
-  document.getElementById("prob").innerText = probFinal.toFixed(1)+"%";
-  document.getElementById("estrategia").innerText = estrategia.nome;
   document.getElementById("status").innerText = status;
 
-  let disp = document.getElementById("display");
-  disp.innerText = resultado.toFixed(2)+"x";
-  disp.style.color = cor(resultado);
+  document.getElementById("display").innerText = resultado.toFixed(2)+"x";
 
   chart.data.labels.push("");
   chart.data.datasets[0].data.push(resultado);
@@ -217,58 +161,25 @@ function rodada(logar=true){
     chart.data.datasets[0].backgroundColor.shift();
   }
 
-  if(logar){
-    chart.update();
-  }
-}
-
-function addLog(txt){
-  let log = document.getElementById("log");
-  log.innerHTML = txt + "<br>" + log.innerHTML;
+  chart.update();
 }
 
 function loop(){
   if(!rodando) return;
-  rodada(true);
-  setTimeout(loop, 350);
+  rodada();
+  setTimeout(loop, 400);
 }
 
 function start(){ rodando=true; loop(); }
 function stop(){ rodando=false; }
 
-async function backtest(){
+function backtest(){
   reset();
+  for(let i=0;i<5000;i++) rodada();
 
-  let totalRodadas = 8000;
-  let bloco = 200;
-
-  for(let i = 0; i < totalRodadas; i += bloco){
-
-    for(let j = 0; j < bloco; j++){
-      rodada(false);
-    }
-
-    document.getElementById("status").innerText =
-      "Backtest: " + Math.min(i+bloco, totalRodadas) + "/" + totalRodadas;
-
-    await new Promise(r => setTimeout(r, 0));
-  }
-
-  let total = wins + losses;
-  let winrate = total ? (wins/total*100).toFixed(1) : 0;
-  let drawdown = saldoMax - saldo;
-
-  alert(
-    "RESULTADO FINAL\n\n"+
-    "Saldo: "+saldo.toFixed(2)+"\n"+
-    "Winrate: "+winrate+"%\n"+
-    "Entradas: "+entradas+"\n"+
-    "Drawdown: "+drawdown.toFixed(2)
-  );
-
-  document.getElementById("status").innerText = "FINALIZADO";
+  alert("Saldo: "+saldo.toFixed(2));
 }
 </script>
 
 </body>
-  </html>
+</html>
