@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>AVIATOR PRO FINAL</title>
+<title>AVIATOR PRO MANUAL</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -11,7 +11,8 @@ body { background:#0b1220; color:#fff; font-family:Arial; text-align:center; }
 #display { font-size:60px; margin:20px; font-weight:bold; }
 
 .box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
-input { padding:8px; width:100px; }
+
+input { padding:10px; width:140px; font-size:18px; text-align:center; }
 button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
 
 .green { background:#22c55e; }
@@ -21,14 +22,12 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🔥 AVIATOR PRO FINAL</h1>
+<h1>🎯 AVIATOR PRO MANUAL</h1>
 
 <div id="display">1.00x</div>
 
 <div class="box">
 💰 Lucro: <span id="lucro">0</span><br>
-🏆 Pico: <span id="pico">0</span><br>
-📉 Drawdown: <span id="dd">0</span><br>
 🎯 Winrate: <span id="winrate">0%</span><br>
 🔢 Entradas: <span id="entradas">0</span><br>
 💵 Stake: <span id="stake">5</span><br>
@@ -36,14 +35,17 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 </div>
 
 <div class="box">
-<input type="number" step="0.01" id="entradaReal" placeholder="1.45">
-<button onclick="inserir()">Inserir</button>
-<button class="green" onclick="entrar()">ENTREI</button>
+<input 
+  type="text" 
+  id="entradaReal" 
+  placeholder="123 = 1.23x"
+  onkeydown="handleKey(event)"
+>
 </div>
 
 <div class="box">
-🎯 Stop Gain: <input id="gain" value="50">
-🛑 Stop Loss: <input id="loss" value="-20">
+<button class="green" onclick="win()">WIN</button>
+<button class="red" onclick="loss()">LOSS</button>
 </div>
 
 <div class="box">
@@ -54,9 +56,10 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 let hist=[], wins=0, losses=0, entradas=0;
 let stake=5, base=5, max=12;
 
-let lucro=0, pico=0, dd=0;
+let lucro=0;
+let cooldown=0, espera=0;
 
-let cooldown=0, espera=0, podeEntrar=false;
+let sinalAtivo=false;
 
 let chart=new Chart(document.getElementById("grafico"),{
  type:'bar',
@@ -75,90 +78,99 @@ function prob(){
  return (ult.filter(x=>x>=1.7).length/30)*100;
 }
 
+// 🔥 CONVERSÃO INTELIGENTE
+function converter(valor){
+ let num = valor.replace(/\D/g,''); // só números
+ if(num === "") return null;
+ return parseInt(num) / 100;
+}
+
+function handleKey(e){
+ if(e.key === "Enter"){
+   inserir();
+   entradaReal.value = "";
+ }
+}
+
 function inserir(){
- let v=parseFloat(entradaReal.value);
- if(isNaN(v)) return;
+ let raw = document.getElementById("entradaReal").value;
+ let v = converter(raw);
+
+ if(v === null) return;
 
  hist.push(v);
  if(hist.length>60) hist.shift();
 
  let p=prob();
  let ult5=hist.slice(-5);
+
  let baixos=ult5.filter(x=>x<2).length;
  let altos=ult5.filter(x=>x>=2).length;
 
  let status="AGUARDANDO";
+ sinalAtivo=false;
 
- if(cooldown>0){cooldown--;status="⏳";}
- else if(espera>0){espera--;status="⏸️";}
- else if(p>=70 && (baixos>=3||altos>=2)){
-   status="🎯 SNIPER";
-   podeEntrar=true;
+ if(cooldown>0){
+   cooldown--;
+   status="⏳ COOLDOWN";
+ }
+ else if(espera>0){
+   espera--;
+   status="⏸️ ESPERA";
+ }
+ else if(p>=70 && (baixos>=3 || altos>=2)){
+   status="🎯 ENTRAR NA PRÓXIMA RODADA";
+   sinalAtivo=true;
    espera=2;
    beep();
- } else podeEntrar=false;
+ }
 
- statusSpan(status);
+ atualizarStatus(status);
  display(v);
  graf(v);
 }
 
-function entrar(){
- if(!podeEntrar) return;
+function win(){
+ if(!sinalAtivo) return;
 
  entradas++;
- let last=hist[hist.length-1];
+ wins++;
 
- if(last>=1.7){
-   wins++;
-   lucro += stake*(1.7-1);
-   stake=Math.min(stake+1,max);
- } else {
-   losses++;
-   lucro -= stake;
-   stake=base;
-   cooldown=3;
- }
+ lucro += stake*(1.7-1);
+ stake=Math.min(stake+1,max);
 
- podeEntrar=false;
-
+ sinalAtivo=false;
  atualizar();
- checarStops();
+}
+
+function loss(){
+ if(!sinalAtivo) return;
+
+ entradas++;
+ losses++;
+
+ lucro -= stake;
+ stake=base;
+ cooldown=3;
+
+ sinalAtivo=false;
+ atualizar();
 }
 
 function atualizar(){
  let total=wins+losses;
  let wr=total?(wins/total*100).toFixed(1):0;
 
- if(lucro>pico) pico=lucro;
- dd=pico-lucro;
-
- winrate.innerText=wr+"%";
- entradasSpan.innerText=entradas;
- stakeSpan.innerText=stake;
- lucroSpan.innerText=lucro.toFixed(2);
- picoSpan.innerText=pico.toFixed(2);
- ddSpan.innerText=dd.toFixed(2);
-}
-
-function checarStops(){
- let gain=parseFloat(document.getElementById("gain").value);
- let loss=parseFloat(document.getElementById("loss").value);
-
- if(lucro>=gain){
-   alert("META BATIDA 🔥");
-   podeEntrar=false;
- }
-
- if(lucro<=loss){
-   alert("STOP LOSS ❌");
-   podeEntrar=false;
- }
+ document.getElementById("winrate").innerText=wr+"%";
+ document.getElementById("entradas").innerText=entradas;
+ document.getElementById("stake").innerText=stake;
+ document.getElementById("lucro").innerText=lucro.toFixed(2);
 }
 
 function display(v){
- displayEl.innerText=v.toFixed(2)+"x";
- displayEl.style.color=cor(v);
+ let el=document.getElementById("display");
+ el.innerText=v.toFixed(2)+"x";
+ el.style.color=cor(v);
 }
 
 function graf(v){
@@ -175,7 +187,9 @@ function graf(v){
  chart.update();
 }
 
-function statusSpan(s){status.innerText=s;}
+function atualizarStatus(s){
+ document.getElementById("status").innerText=s;
+}
 
 function beep(){
  let ctx=new AudioContext();
@@ -185,14 +199,10 @@ function beep(){
  setTimeout(()=>o.stop(),100);
 }
 
-const displayEl=document.getElementById("display");
-const status=document.getElementById("status");
-const winrate=document.getElementById("winrate");
-const entradasSpan=document.getElementById("entradas");
-const stakeSpan=document.getElementById("stake");
-const lucroSpan=document.getElementById("lucro");
-const picoSpan=document.getElementById("pico");
-const ddSpan=document.getElementById("dd");
+// 🔥 FOCO AUTOMÁTICO
+setInterval(()=>{
+ document.getElementById("entradaReal").focus();
+},1000);
 </script>
 
 </body>
