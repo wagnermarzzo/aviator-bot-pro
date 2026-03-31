@@ -95,7 +95,7 @@ function rodada(logar=true){
   let baixos = ult5.filter(x=>x < 2).length;
   let altos = ult5.filter(x=>x >= 2).length;
 
-  let padraoExtremo = (baixos >= 4) || (altos >= 2);
+  let padraoExtremo = (baixos >= 3) || (altos >= 2);
 
   let entrar = false;
   let status = "AGUARDANDO";
@@ -108,10 +108,10 @@ function rodada(logar=true){
     espera--;
     status = "⏸️ ESPERA ("+espera+")";
   }
-  else if(prob >= 75 && padraoExtremo){
+  else if(prob >= 70 && padraoExtremo){
     entrar = true;
     status = "🎯 SNIPER";
-    espera = 3;
+    espera = 2;
   }
 
   let valor = gale ? 10 : 5;
@@ -132,7 +132,7 @@ function rodada(logar=true){
         gale = 1;
       } else {
         gale = 0;
-        cooldown = 5;
+        cooldown = 3;
       }
     }
   }
