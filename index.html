@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>AVIATOR SNIPER REAL FINAL</title>
+<title>AVIATOR SNIPER + GESTÃO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -18,7 +18,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🎯 MODO SNIPER REAL FINAL</h1>
+<h1>🎯 SNIPER + GESTÃO DE BANCA</h1>
 
 <div id="display">1.00x</div>
 
@@ -27,6 +27,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 🎯 Winrate: <span id="winrate">0%</span><br>
 📉 Drawdown: <span id="drawdown">0</span><br>
 🔢 Entradas: <span id="entradas">0</span><br>
+💵 Stake: <span id="stake">5</span><br>
 ⚙️ Status: <span id="status">AGUARDANDO</span>
 </div>
 
@@ -45,6 +46,11 @@ let gale = 0;
 let cooldown = 0;
 let espera = 0;
 
+// 💰 GESTÃO
+let stake = 5;
+let stakeBase = 5;
+let stakeMax = 10;
+
 function reset(){
   saldo = 100;
   saldoMax = 100;
@@ -55,6 +61,7 @@ function reset(){
   gale = 0;
   cooldown = 0;
   espera = 0;
+  stake = stakeBase;
 }
 reset();
 
@@ -102,11 +109,11 @@ function rodada(logar=true){
 
   if(cooldown > 0){
     cooldown--;
-    status = "⏳ COOLDOWN ("+cooldown+")";
+    status = "⏳ COOLDOWN";
   }
   else if(espera > 0){
     espera--;
-    status = "⏸️ ESPERA ("+espera+")";
+    status = "⏸️ ESPERA";
   }
   else if(prob >= 70 && padraoExtremo){
     entrar = true;
@@ -114,7 +121,7 @@ function rodada(logar=true){
     espera = 2;
   }
 
-  let valor = gale ? 10 : 5;
+  let valor = gale ? stake * 2 : stake;
 
   if(entrar){
     entradas++;
@@ -124,9 +131,16 @@ function rodada(logar=true){
       wins++;
       gale = 0;
       cooldown = 0;
+
+      // 💰 aumenta stake leve
+      stake = Math.min(stake + 1, stakeMax);
+
     } else {
       saldo -= valor;
       losses++;
+
+      // 💰 reset stake
+      stake = stakeBase;
 
       if(!gale){
         gale = 1;
@@ -147,6 +161,7 @@ function rodada(logar=true){
   document.getElementById("winrate").innerText = winrate+"%";
   document.getElementById("drawdown").innerText = drawdown.toFixed(2);
   document.getElementById("entradas").innerText = entradas;
+  document.getElementById("stake").innerText = stake;
   document.getElementById("status").innerText = status;
 
   if(logar){
@@ -211,4 +226,4 @@ async function backtest(){
 </script>
 
 </body>
-</html>
+  </html>
