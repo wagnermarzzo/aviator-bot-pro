@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator ELITE IA</title>
+<title>Aviator IA ALINHADA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -12,6 +12,7 @@ body { background:#0b1220; color:#fff; font-family:Arial; text-align:center; }
 #display {
   font-size:60px;
   margin:20px;
+  font-weight:bold;
 }
 
 button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
@@ -20,7 +21,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 .box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
 
-.log { max-height:120px; overflow:auto; text-align:left; }
+.log { max-height:150px; overflow:auto; text-align:left; }
 
 .super { color: gold; font-weight:bold; }
 </style>
@@ -28,7 +29,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🎰 AVIATOR ELITE IA</h1>
+<h1>🎯 AVIATOR IA ALINHADA</h1>
 
 <div id="display">1.00x</div>
 
@@ -69,7 +70,12 @@ reset();
 
 let chart = new Chart(document.getElementById('grafico'), {
   type: 'bar',
-  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] }
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+  options: {
+    scales: {
+      y: { beginAtZero: true }
+    }
+  }
 });
 
 function gerar(){
@@ -87,7 +93,7 @@ function cor(x){
 }
 
 function analisar(){
-  if(historico.length < 20) return {score:0, prob:0, super:false};
+  if(historico.length < 20) return {prob:0};
 
   let ult = historico.slice(-20);
 
@@ -99,13 +105,7 @@ function analisar(){
 
   let prob = Math.min(95, Math.max(50, 50 + score*5));
 
-  let superEntrada =
-    baixos >= 8 &&
-    altos <= 4 &&
-    media < 2 &&
-    perdasSeguidas == 2;
-
-  return {score, prob, superEntrada};
+  return {prob};
 }
 
 function rodada(logar=true){
@@ -113,16 +113,21 @@ function rodada(logar=true){
   historico.push(resultado);
   if(historico.length > 60) historico.shift();
 
-  let {score, prob, superEntrada} = analisar();
+  let {prob} = analisar();
 
-  let entrar = score >= 75 && perdasSeguidas < 2;
-
+  let entrar = false;
   let status = "AGUARDANDO";
 
-  if(superEntrada){
+  let ult = historico.slice(-5);
+  let padraoOK = ult.filter(x=>x<2).length >= 2;
+
+  // DECISÃO ALINHADA COM PROBABILIDADE
+  if (prob >= 85 && perdasSeguidas < 2) {
     entrar = true;
     status = "🔥 SUPER ENTRADA";
-  } else if(entrar){
+  }
+  else if (prob >= 70 && padraoOK && perdasSeguidas < 2) {
+    entrar = true;
     status = "ENTRADA";
   }
 
@@ -132,7 +137,7 @@ function rodada(logar=true){
     if(resultado >= 1.7){
       saldo += 5*(1.7-1);
       wins++;
-      perdasSeguidas = 0;
+      perdasSeguidas = 2;
       if(logar) addLog("🟢 WIN "+resultado.toFixed(2));
     } else {
       saldo -= 5;
@@ -153,9 +158,10 @@ function rodada(logar=true){
   document.getElementById("drawdown").innerText = drawdown.toFixed(2);
   document.getElementById("entradas").innerText = entradas;
   document.getElementById("prob").innerText = prob.toFixed(1)+"%";
-  document.getElementById("status").innerHTML = superEntrada ? "<span class='super'>🔥 SUPER ENTRADA</span>" : status;
 
-  // display estilo aviator
+  document.getElementById("status").innerHTML =
+    status.includes("SUPER") ? "<span class='super'>"+status+"</span>" : status;
+
   let disp = document.getElementById("display");
   disp.innerText = resultado.toFixed(2)+"x";
   disp.style.color = cor(resultado);
@@ -199,7 +205,7 @@ function backtest(){
   let drawdown = saldoMax - saldo;
 
   alert(
-    "RESULTADO\n\n"+
+    "BACKTEST FINALIZADO\n\n"+
     "Saldo: "+saldo.toFixed(2)+"\n"+
     "Winrate: "+winrate+"%\n"+
     "Entradas: "+entradas+"\n"+
