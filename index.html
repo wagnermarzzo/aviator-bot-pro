@@ -60,7 +60,7 @@ function reset(){
   saldoMax = 100;
   wins = 0;
   losses = 0;
-  perdasSeguidas = 0;
+  perdasSeguidas = 2;
   entradas = 0;
   historico = [];
 }
@@ -100,10 +100,10 @@ function analisar(){
   let prob = Math.min(95, Math.max(50, 50 + score*5));
 
   let superEntrada =
-    baixos >= 12 &&
-    altos <= 2 &&
+    baixos >= 8 &&
+    altos <= 4 &&
     media < 2 &&
-    perdasSeguidas == 0;
+    perdasSeguidas == 2;
 
   return {score, prob, superEntrada};
 }
