@@ -17,6 +17,8 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 .green { background:#22c55e; }
 .red { background:red; }
+
+.box h2 { color:#22c55e; }
 </style>
 </head>
 
@@ -52,6 +54,51 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 <canvas id="grafico"></canvas>
 </div>
 
+<!-- 🔥 GUIA OPERACIONAL -->
+<div class="box" style="text-align:left; font-size:14px; line-height:1.6;">
+<h2>📋 GUIA OPERACIONAL</h2>
+
+<b>🎯 COMO DIGITAR AS VELAS</b><br>
+- Digite apenas números:<br>
+&nbsp;&nbsp;123 → 1.23x<br>
+&nbsp;&nbsp;158 → 1.58x<br>
+&nbsp;&nbsp;1234 → 12.34x<br>
+- Pressione ENTER para registrar<br><br>
+
+<b>🎯 QUANDO ENTRAR</b><br>
+- Apenas quando aparecer:<br>
+👉 <b>🎯 ENTRAR NA PRÓXIMA RODADA</b><br>
+- Nunca antecipar entrada<br>
+- Nunca operar sem sinal<br><br>
+
+<b>💰 SAÍDA PADRÃO</b><br>
+- Sempre sair em <b>1.7x</b><br>
+- Não alterar alvo<br><br>
+
+<b>📈 ESCALADA DE GANHO (GESTÃO)</b><br>
+- WIN → aumenta stake +1<br>
+- Sequência de WIN → continua subindo até limite<br>
+- Máximo de stake: <b>12</b><br><br>
+
+<b>🔻 APÓS LOSS</b><br>
+- Volta stake para o valor base (5)<br>
+- Ativa cooldown automático<br><br>
+
+<b>⏳ COOLDOWN</b><br>
+- Após loss → aguardar sinais novamente<br>
+- Não forçar entrada<br><br>
+
+<b>🧠 REGRAS DE OURO</b><br>
+- Não operar fora do sinal<br>
+- Não aumentar stake manualmente<br>
+- Não tentar recuperar no emocional<br>
+- Seguir o sistema 100%<br><br>
+
+<b>🚀 OBJETIVO</b><br>
+- Operar de 10 a 20 entradas por sessão<br>
+- Buscar consistência, não sorte<br>
+</div>
+
 <script>
 let hist=[], wins=0, losses=0, entradas=0;
 let stake=5, base=5, max=12;
@@ -78,9 +125,9 @@ function prob(){
  return (ult.filter(x=>x>=1.7).length/30)*100;
 }
 
-// 🔥 CONVERSÃO INTELIGENTE
+// 🔥 CONVERSÃO AUTOMÁTICA
 function converter(valor){
- let num = valor.replace(/\D/g,''); // só números
+ let num = valor.replace(/\D/g,'');
  if(num === "") return null;
  return parseInt(num) / 100;
 }
@@ -206,4 +253,4 @@ setInterval(()=>{
 </script>
 
 </body>
-</html>
+  </html>
