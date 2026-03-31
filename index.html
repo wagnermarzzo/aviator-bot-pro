@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA FINAL</title>
+<title>Aviator IA FINAL PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -17,13 +17,12 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 .box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
 .log { max-height:150px; overflow:auto; text-align:left; }
-.super { color: gold; font-weight:bold; }
 </style>
 </head>
 
 <body>
 
-<h1>🚀 AVIATOR IA FINAL</h1>
+<h1>🚀 AVIATOR IA FINAL PRO</h1>
 
 <div id="display">1.00x</div>
 
@@ -33,7 +32,8 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 📉 Drawdown: <span id="drawdown">0</span><br>
 🔢 Entradas: <span id="entradas">0</span><br>
 🧠 Probabilidade: <span id="prob">-</span><br>
-📊 Estratégia: <span id="estrategia">-</span>
+📊 Estratégia: <span id="estrategia">-</span><br>
+⚙️ Status: <span id="status">AGUARDANDO</span>
 </div>
 
 <button class="start" onclick="start()">START</button>
@@ -64,7 +64,8 @@ reset();
 
 let chart = new Chart(document.getElementById('grafico'), {
   type: 'bar',
-  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] }
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+  options: { scales: { y: { beginAtZero: true } } }
 });
 
 function gerar(){
@@ -81,12 +82,10 @@ function cor(x){
   return "pink";
 }
 
-// 📊 Probabilidade REAL baseada no histórico
+// 📊 Probabilidade real
 function probReal(){
   if(historico.length < 30) return 50;
-
   let ult = historico.slice(-30);
-
   let ganhos = ult.filter(x=>x >= 1.7).length;
   return (ganhos / 30) * 100;
 }
@@ -95,7 +94,7 @@ function probReal(){
 function estrategiaReversao(){
   let ult = historico.slice(-10);
   let baixos = ult.filter(x=>x<2).length;
-  return baixos >= 7 ? 70 : 40;
+  return baixos >= 6 ? 70 : 40;
 }
 
 function estrategiaContinuidade(){
@@ -106,11 +105,11 @@ function estrategiaContinuidade(){
 
 function estrategiaScalp(){
   let ult = historico.slice(-15);
-  let proximos = ult.filter(x=>x>=1.5 && x<=2).length;
-  return (proximos/15)*100;
+  let mid = ult.filter(x=>x>=1.5 && x<=2).length;
+  return (mid/15)*100;
 }
 
-// 🧠 Escolhe melhor estratégia
+// 🧠 Escolha da melhor estratégia
 function escolherEstrategia(){
   let r = estrategiaReversao();
   let c = estrategiaContinuidade();
@@ -133,7 +132,14 @@ function rodada(logar=true){
 
   let probFinal = (probBase + estrategia.prob) / 2;
 
-  let entrar = probFinal >= 70 && perdasSeguidas < 2;
+  let entrar = false;
+
+  if(probFinal >= 80 && perdasSeguidas < 2){
+    entrar = true;
+  }
+  else if(probFinal >= 70 && perdasSeguidas < 2){
+    entrar = true;
+  }
 
   if(entrar){
     entradas++;
@@ -178,7 +184,9 @@ function rodada(logar=true){
     chart.data.datasets[0].backgroundColor.shift();
   }
 
-  chart.update();
+  if(logar){
+    chart.update();
+  }
 }
 
 function addLog(txt){
@@ -188,18 +196,30 @@ function addLog(txt){
 
 function loop(){
   if(!rodando) return;
-  rodada();
-  setTimeout(loop, 350);
+  rodada(true);
+  setTimeout(loop, 400);
 }
 
 function start(){ rodando=true; loop(); }
 function stop(){ rodando=false; }
 
-function backtest(){
+// 🚀 BACKTEST SEM TRAVAR
+async function backtest(){
   reset();
 
-  for(let i=0;i<8000;i++){
-    rodada(false);
+  let totalRodadas = 8000;
+  let bloco = 200;
+
+  for(let i = 0; i < totalRodadas; i += bloco){
+
+    for(let j = 0; j < bloco; j++){
+      rodada(false);
+    }
+
+    document.getElementById("status").innerText =
+      "Backtest: " + Math.min(i+bloco, totalRodadas) + "/" + totalRodadas;
+
+    await new Promise(r => setTimeout(r, 0));
   }
 
   let total = wins + losses;
@@ -213,8 +233,10 @@ function backtest(){
     "Entradas: "+entradas+"\n"+
     "Drawdown: "+drawdown.toFixed(2)
   );
+
+  document.getElementById("status").innerText = "FINALIZADO";
 }
 </script>
 
 </body>
-  </html>
+</html>
