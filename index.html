@@ -2,31 +2,43 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator SNIPER PRO MAX</title>
+<title>Aviator ELITE IA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { background:#0f172a; color:#fff; font-family:Arial; text-align:center; }
+body { background:#0b1220; color:#fff; font-family:Arial; text-align:center; }
+
+#display {
+  font-size:60px;
+  margin:20px;
+}
+
 button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
 .start { background:#22c55e; }
 .stop { background:red; }
+
 .box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
-.log { max-height:150px; overflow:auto; text-align:left; }
+
+.log { max-height:120px; overflow:auto; text-align:left; }
+
+.super { color: gold; font-weight:bold; }
 </style>
 </head>
 
 <body>
 
-<h1>🎯 SNIPER PRO MAX</h1>
+<h1>🎰 AVIATOR ELITE IA</h1>
+
+<div id="display">1.00x</div>
 
 <div class="box">
 💰 Saldo: <span id="saldo">100</span><br>
-📊 Último: <span id="ultimo">-</span><br>
 🎯 Winrate: <span id="winrate">0%</span><br>
 📉 Drawdown: <span id="drawdown">0</span><br>
 🔢 Entradas: <span id="entradas">0</span><br>
-🧠 Probabilidade: <span id="prob">-</span>
+🧠 Probabilidade: <span id="prob">-</span><br>
+⚙️ Status: <span id="status">AGUARDANDO</span>
 </div>
 
 <button class="start" onclick="start()">START</button>
@@ -75,7 +87,7 @@ function cor(x){
 }
 
 function analisar(){
-  if(historico.length < 20) return {score:0, prob:0};
+  if(historico.length < 20) return {score:0, prob:0, super:false};
 
   let ult = historico.slice(-20);
 
@@ -87,14 +99,13 @@ function analisar(){
 
   let prob = Math.min(95, Math.max(50, 50 + score*5));
 
-  return {score, prob};
-}
+  let superEntrada =
+    baixos >= 12 &&
+    altos <= 2 &&
+    media < 2 &&
+    perdasSeguidas == 0;
 
-function validar(score){
-  let ult = historico.slice(-5);
-  let baixosSeq = ult.filter(x=>x<2).length >= 3;
-  let poucosAltos = historico.slice(-10).filter(x=>x>=3).length <= 2;
-  return score >= 8 && baixosSeq && poucosAltos && perdasSeguidas < 2;
+  return {score, prob, superEntrada};
 }
 
 function rodada(logar=true){
@@ -102,9 +113,18 @@ function rodada(logar=true){
   historico.push(resultado);
   if(historico.length > 60) historico.shift();
 
-  let {score, prob} = analisar();
+  let {score, prob, superEntrada} = analisar();
 
-  let entrar = validar(score);
+  let entrar = score >= 8 && perdasSeguidas < 2;
+
+  let status = "AGUARDANDO";
+
+  if(superEntrada){
+    entrar = true;
+    status = "🔥 SUPER ENTRADA";
+  } else if(entrar){
+    status = "ENTRADA";
+  }
 
   if(entrar){
     entradas++;
@@ -129,11 +149,16 @@ function rodada(logar=true){
   let winrate = total ? (wins/total*100).toFixed(1) : 0;
 
   document.getElementById("saldo").innerText = saldo.toFixed(2);
-  document.getElementById("ultimo").innerText = resultado.toFixed(2)+"x";
   document.getElementById("winrate").innerText = winrate+"%";
   document.getElementById("drawdown").innerText = drawdown.toFixed(2);
   document.getElementById("entradas").innerText = entradas;
   document.getElementById("prob").innerText = prob.toFixed(1)+"%";
+  document.getElementById("status").innerHTML = superEntrada ? "<span class='super'>🔥 SUPER ENTRADA</span>" : status;
+
+  // display estilo aviator
+  let disp = document.getElementById("display");
+  disp.innerText = resultado.toFixed(2)+"x";
+  disp.style.color = cor(resultado);
 
   chart.data.labels.push("");
   chart.data.datasets[0].data.push(resultado);
@@ -174,7 +199,7 @@ function backtest(){
   let drawdown = saldoMax - saldo;
 
   alert(
-    "BACKTEST FINALIZADO\n\n"+
+    "RESULTADO\n\n"+
     "Saldo: "+saldo.toFixed(2)+"\n"+
     "Winrate: "+winrate+"%\n"+
     "Entradas: "+entradas+"\n"+
