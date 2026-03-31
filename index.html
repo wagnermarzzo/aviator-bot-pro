@@ -2,140 +2,148 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator Bot PRO</title>
+<title>Aviator IA PRO</title>
 
 <style>
-body {
-  background: #0f172a;
-  color: #fff;
-  font-family: Arial;
-  text-align: center;
-}
-
-h1 {
-  color: #38bdf8;
-}
-
-button {
-  padding: 10px 20px;
-  margin: 10px;
-  border: none;
-  border-radius: 5px;
-  background: #22c55e;
-  color: white;
-  cursor: pointer;
-}
-
-.stop {
-  background: red;
-}
-
-.box {
-  background: #1e293b;
-  padding: 15px;
-  margin: 10px;
-  border-radius: 10px;
-}
-
+body { background:#0f172a; color:#fff; font-family:Arial; text-align:center; }
+button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointer; }
+.start { background:#22c55e; }
+.stop { background:red; }
+select { padding:5px; }
+.box { background:#1e293b; margin:10px; padding:15px; border-radius:10px; }
 </style>
 </head>
 
 <body>
 
-<h1>🚀 Aviator Bot PRO</h1>
+<h1>🚀 Aviator IA Adaptativa</h1>
 
 <div class="box">
-  <p>💰 Saldo: <span id="saldo">100</span></p>
-  <p>📊 Último: <span id="ultimo">-</span></p>
-  <p>🧠 Decisão: <span id="decisao">-</span></p>
+  💰 Saldo: <span id="saldo">100</span><br>
+  📊 Último: <span id="ultimo">-</span><br>
+  🧠 Score: <span id="score">-</span><br>
+  ⚙️ Decisão: <span id="decisao">-</span>
 </div>
 
-<button onclick="start()">START</button>
+<div class="box">
+Modo:
+<select id="modo">
+  <option value="1">Conservador</option>
+  <option value="0.7">Balanceado</option>
+  <option value="0.5">Agressivo</option>
+</select>
+</div>
+
+<button class="start" onclick="start()">START</button>
 <button class="stop" onclick="stop()">STOP</button>
 
 <div class="box">
-  <h3>Histórico</h3>
-  <div id="historico"></div>
+<h3>Histórico</h3>
+<div id="historico"></div>
 </div>
 
 <script>
 let saldo = 100;
 let aposta = 5;
 let meta = 1.8;
+
 let rodando = false;
 let historico = [];
+
+let perdasSeguidas = 0;
+let ganhosSeguidos = 0;
+
+let stopLoss = 50;
+let stopGain = 200;
 
 function gerarMultiplicador() {
   let r = Math.random();
 
-  if (r < 0.50) return (1 + Math.random() * 0.5).toFixed(2);
-  if (r < 0.80) return (1.5 + Math.random() * 1.5).toFixed(2);
-  if (r < 0.95) return (3 + Math.random() * 7).toFixed(2);
+  if (r < 0.5) return (1 + Math.random()*0.5);
+  if (r < 0.8) return (1.5 + Math.random()*1.5);
+  if (r < 0.95) return (3 + Math.random()*7);
 
-  return (10 + Math.random() * 40).toFixed(2);
+  return (10 + Math.random()*40);
 }
 
-function analisar() {
-  if (historico.length < 10) return "AGUARDAR";
+function calcularScore() {
+  if (historico.length < 10) return 0;
 
-  let ultimos = historico.slice(-10);
+  let ult = historico.slice(-10);
 
-  let baixos = ultimos.filter(x => x < 2).length;
-  let altos = ultimos.filter(x => x >= 5).length;
-  let media = ultimos.reduce((a,b)=>a+b,0) / ultimos.length;
+  let baixos = ult.filter(x=>x<2).length;
+  let altos = ult.filter(x=>x>=5).length;
+  let media = ult.reduce((a,b)=>a+b,0)/ult.length;
 
-  // Lógica melhorada
-  if (baixos >= 7 && altos == 0 && media < 2) {
-    return "ENTRAR";
-  }
+  let score = 0;
 
-  if (baixos >= 8) {
-    return "EVITAR";
-  }
+  score += baixos * 1.5;
+  score += (5 - altos) * 1.2;
+  score += (2 - media);
+
+  // penaliza perdas
+  score -= perdasSeguidas * 2;
+
+  return score;
+}
+
+function decidir(score) {
+  let modo = parseFloat(document.getElementById("modo").value);
+
+  let limite = 8 * modo;
+
+  if (score >= limite) return "ENTRAR";
+  if (score < 4) return "EVITAR";
 
   return "NEUTRO";
 }
 
-function atualizarTela(resultado, decisao) {
+function atualizar(resultado, score, decisao) {
   document.getElementById("saldo").innerText = saldo.toFixed(2);
-  document.getElementById("ultimo").innerText = resultado + "x";
+  document.getElementById("ultimo").innerText = resultado.toFixed(2)+"x";
+  document.getElementById("score").innerText = score.toFixed(2);
   document.getElementById("decisao").innerText = decisao;
 
-  let hist = document.getElementById("historico");
-  hist.innerHTML = historico.map(x => `<span>${x}x </span>`).join("");
+  document.getElementById("historico").innerHTML =
+    historico.map(x=>x.toFixed(2)+"x").join(" | ");
 }
 
 function loop() {
   if (!rodando) return;
 
-  let resultado = parseFloat(gerarMultiplicador());
+  if (saldo <= stopLoss || saldo >= stopGain) {
+    alert("BOT PARADO (STOP)");
+    rodando = false;
+    return;
+  }
+
+  let resultado = gerarMultiplicador();
   historico.push(resultado);
   if (historico.length > 30) historico.shift();
 
-  let decisao = analisar();
+  let score = calcularScore();
+  let decisao = decidir(score);
 
   if (decisao === "ENTRAR") {
     if (resultado >= meta) {
       saldo += aposta * (meta - 1);
+      ganhosSeguidos++;
+      perdasSeguidas = 0;
     } else {
       saldo -= aposta;
+      perdasSeguidas++;
+      ganhosSeguidos = 0;
     }
   }
 
-  atualizarTela(resultado, decisao);
+  atualizar(resultado, score, decisao);
 
-  setTimeout(loop, 1000);
+  setTimeout(loop, 800);
 }
 
-function start() {
-  rodando = true;
-  loop();
-}
-
-function stop() {
-  rodando = false;
-}
+function start() { rodando = true; loop(); }
+function stop() { rodando = false; }
 </script>
 
 </body>
-  </html>
+</html>
