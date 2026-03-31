@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Aviator IA FINAL PRO</title>
+<title>Aviator IA FINAL + GALE</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -22,7 +22,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 
 <body>
 
-<h1>🚀 AVIATOR IA FINAL PRO</h1>
+<h1>🚀 AVIATOR IA + GALE INTELIGENTE</h1>
 
 <div id="display">1.00x</div>
 
@@ -49,6 +49,7 @@ button { padding:10px; margin:5px; border:none; border-radius:5px; cursor:pointe
 <script>
 let saldo, saldoMax, wins, losses, perdasSeguidas, entradas;
 let historico, rodando;
+let gale = 0;
 
 function reset(){
   saldo = 100;
@@ -58,6 +59,7 @@ function reset(){
   perdasSeguidas = 0;
   entradas = 0;
   historico = [];
+  gale = 0;
 }
 
 reset();
@@ -94,13 +96,13 @@ function probReal(){
 function estrategiaReversao(){
   let ult = historico.slice(-10);
   let baixos = ult.filter(x=>x<2).length;
-  return baixos >= 6 ? 70 : 40;
+  return baixos >= 5 ? 70 : 45;
 }
 
 function estrategiaContinuidade(){
   let ult = historico.slice(-5);
   let media = ult.reduce((a,b)=>a+b,0)/5;
-  return media >= 2 ? 65 : 45;
+  return media >= 1.8 ? 65 : 50;
 }
 
 function estrategiaScalp(){
@@ -109,7 +111,6 @@ function estrategiaScalp(){
   return (mid/15)*100;
 }
 
-// 🧠 Escolha da melhor estratégia
 function escolherEstrategia(){
   let r = estrategiaReversao();
   let c = estrategiaContinuidade();
@@ -129,31 +130,51 @@ function rodada(logar=true){
 
   let probBase = probReal();
   let estrategia = escolherEstrategia();
-
   let probFinal = (probBase + estrategia.prob) / 2;
 
   let entrar = false;
+  let status = "AGUARDANDO";
 
-  if(probFinal >= 80 && perdasSeguidas < 2){
-    entrar = true;
+  if(perdasSeguidas >= 2){
+    entrar = false;
+    status = "BLOQUEADO";
   }
-  else if(probFinal >= 70 && perdasSeguidas < 2){
+  else if(probFinal >= 75){
     entrar = true;
+    status = "🔥 SUPER ENTRADA";
   }
+  else if(probFinal >= 62){
+    entrar = true;
+    status = "ENTRADA";
+  }
+
+  let valorBase = 5;
+  let valorAposta = gale == 1 ? valorBase * 2 : valorBase;
 
   if(entrar){
     entradas++;
 
     if(resultado >= 1.7){
-      saldo += 5*(1.7-1);
+      saldo += valorAposta * (1.7 - 1);
       wins++;
       perdasSeguidas = 0;
-      if(logar) addLog("🟢 "+estrategia.nome+" WIN "+resultado.toFixed(2));
-    } else {
-      saldo -= 5;
+      gale = 0;
+
+      if(logar) addLog("🟢 "+estrategia.nome+" WIN "+valorAposta+" ("+resultado.toFixed(2)+"x)");
+    } 
+    else {
+      saldo -= valorAposta;
       losses++;
       perdasSeguidas++;
-      if(logar) addLog("🔴 "+estrategia.nome+" LOSS "+resultado.toFixed(2));
+
+      // 🔥 GALE INTELIGENTE
+      if(gale == 0 && probFinal >= 70){
+        gale = 1;
+        if(logar) addLog("⚠️ GALE ATIVADO");
+      } else {
+        gale = 0;
+        if(logar) addLog("🔴 LOSS FINAL");
+      }
     }
   }
 
@@ -169,6 +190,7 @@ function rodada(logar=true){
   document.getElementById("entradas").innerText = entradas;
   document.getElementById("prob").innerText = probFinal.toFixed(1)+"%";
   document.getElementById("estrategia").innerText = estrategia.nome;
+  document.getElementById("status").innerText = status;
 
   let disp = document.getElementById("display");
   disp.innerText = resultado.toFixed(2)+"x";
@@ -203,7 +225,6 @@ function loop(){
 function start(){ rodando=true; loop(); }
 function stop(){ rodando=false; }
 
-// 🚀 BACKTEST SEM TRAVAR
 async function backtest(){
   reset();
 
